@@ -210,8 +210,6 @@ html[dir="rtl"] .jump-select{padding:9px 16px 9px 34px;background-position:left 
 <body>
 <div class="wrap" id="app"></div>
 
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
 <script>
 /* Firebase Realtime Database configuration.
    Paste the config from Firebase Console > Project settings > Your apps > Web app. */
@@ -228,19 +226,50 @@ const FIREBASE_CONFIG = {
 let firebaseDB = null;
 let firebaseRef = null;
 let firebaseConnected = false;
-try {
-  const configured = FIREBASE_CONFIG.apiKey !== "PASTE_API_KEY_HERE" &&
-                     FIREBASE_CONFIG.projectId !== "PASTE_PROJECT_ID" &&
-                     FIREBASE_CONFIG.appId !== "PASTE_APP_ID" &&
-                     FIREBASE_CONFIG.databaseURL.indexOf("PASTE_") === -1;
-  if (configured && window.firebase) {
-    firebase.initializeApp(FIREBASE_CONFIG);
+const firebaseConfigured =
+  FIREBASE_CONFIG.apiKey !== "PASTE_API_KEY_HERE" &&
+  FIREBASE_CONFIG.projectId !== "PASTE_PROJECT_ID" &&
+  FIREBASE_CONFIG.appId !== "PASTE_APP_ID" &&
+  FIREBASE_CONFIG.databaseURL.indexOf("PASTE_") === -1;
+
+function initFirebase(){
+  if(!firebaseConfigured || !window.firebase || firebaseConnected) return false;
+  try {
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     firebaseDB = firebase.database();
     firebaseRef = firebaseDB.ref('survey-tracker-v5');
     firebaseConnected = true;
+    return true;
+  } catch(e) {
+    console.error('Firebase initialization failed:', e);
+    return false;
   }
-} catch (e) {
-  console.error('Firebase initialization failed:', e);
+}
+
+function loadFirebaseSDK(){
+  if(!firebaseConfigured) return Promise.resolve(false);
+  if(window.firebase && window.firebase.database) return Promise.resolve(initFirebase());
+
+  return new Promise((resolve)=>{
+    let appLoaded=false, dbLoaded=false, settled=false;
+    const finish=()=>{
+      if(settled || !appLoaded || !dbLoaded) return;
+      settled=true; resolve(initFirebase());
+    };
+    const app=document.createElement('script');
+    app.src='https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js';
+    app.async=true;
+    app.onload=()=>{appLoaded=true; finish();};
+    app.onerror=()=>{settled=true; resolve(false);};
+    document.head.appendChild(app);
+
+    const db=document.createElement('script');
+    db.src='https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js';
+    db.async=true;
+    db.onload=()=>{dbLoaded=true; finish();};
+    db.onerror=()=>{settled=true; resolve(false);};
+    document.head.appendChild(db);
+  });
 }
 </script>
 
@@ -673,56 +702,60 @@ window.addEventListener('storage',(e)=>{
   }
 });
 
-async function init(){
-  await loadTheme();
-  await loadViewPref();
+async function reconcileFirebase(){
+  if(!firebaseConnected || !firebaseRef) return;
+  try{
+    const snap = await firebaseRef.once('value');
+    const data = snap.exists() ? snap.val() : null;
+    const shared = data && data.state ? {
+      updatedAt: Number(data.updatedAt || 0),
+      state: data.state
+    } : null;
+    const local = loadLocalState();
+    const localTime = local ? local.updatedAt : 0;
+    const sharedTime = shared ? shared.updatedAt : 0;
 
-  // First restore the durable local copy immediately.
-  const local = loadLocalState();
-  state = local ? local.state : null;
-
-  // Firebase is the primary shared source of truth.
-  if(firebaseConnected && firebaseRef){
-    try{
-      const snap = await firebaseRef.once('value');
-      const data = snap.exists() ? snap.val() : null;
-      const shared = data && data.state ? { updatedAt: Number(data.updatedAt || 0), state: data.state } : null;
-      const localTime = local ? local.updatedAt : 0;
-      const sharedTime = shared ? shared.updatedAt : 0;
-
-      if(shared && shared.state && sharedTime >= localTime){
-        state = shared.state;
-        try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(shared)); }catch(e){}
-      }else if(local && local.state && localTime > sharedTime){
-        await saveState();
-      }
-    }catch(e){ console.error('Firebase initial load failed:', e); }
-  } else {
-    // Legacy shared storage fallback.
-    try{
-      if(window.storage && typeof window.storage.get === 'function'){
-        const res = await window.storage.get(KEY, true);
-        const shared = res && res.value ? unpackState(res.value) : null;
-        const localTime = local ? local.updatedAt : 0;
-        const sharedTime = shared ? shared.updatedAt : 0;
-        if(shared && shared.state && sharedTime > localTime){
-          state = shared.state;
-          try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(shared)); }catch(e){}
-        }else if(local && local.state && localTime > sharedTime){
-          await saveState();
-        }
-      }
-    }catch(e){}
+    if(shared && shared.state && sharedTime >= localTime){
+      state = shared.state;
+      try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(shared)); }catch(e){}
+      render();
+    }else if(local && local.state && localTime > sharedTime){
+      await saveState();
+    }else if(state){
+      await saveState();
+    }
+  }catch(e){
+    console.error('Firebase initial load failed:', e);
   }
+}
+
+async function init(){
+  // Paint from local storage first. Nothing remote is allowed to block first render.
+  let local = loadLocalState();
+  state = local ? local.state : null;
 
   if(!state){
     state = buildState(DEFAULT_LINKS, DEFAULT_NAME_A, DEFAULT_NAME_B, DEFAULT_MSG);
-    await saveState();
   }
 
   loaded = true;
   render();
-  startFirebaseSync();
+
+  // Preferences can be applied after the first paint.
+  Promise.allSettled([loadTheme(), loadViewPref()]).then(()=>render());
+
+  // Load Firebase lazily in the background, then reconcile shared state.
+  // This removes Firebase CDN/network latency from the initial page render.
+  loadFirebaseSDK().then(async (ok)=>{
+    if(ok){
+      await reconcileFirebase();
+      startFirebaseSync();
+    }else if(!local){
+      // Keep the first-run default persisted even if Firebase is unavailable.
+      try{ await saveState(); }catch(e){}
+    }
+  });
+
   setInterval(pollForUpdates, 1000);
 
   // localStorage is synchronous and is the final safety net on page close.
@@ -730,13 +763,15 @@ async function init(){
     if(state){
       try{
         const existing = loadLocalState();
-        const envelope = { updatedAt: existing ? Math.max(existing.updatedAt, Date.now()) : Date.now(), state };
+        const envelope = {
+          updatedAt: existing ? Math.max(existing.updatedAt, Date.now()) : Date.now(),
+          state
+        };
         localStorage.setItem(LOCAL_KEY, JSON.stringify(envelope));
       }catch(e){}
     }
   });
 }
-
 init();
 
 </script>
