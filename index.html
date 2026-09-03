@@ -112,6 +112,21 @@ textarea.field{resize:vertical;}
 
 .hint-text{font-size:10.5px;color:var(--ink-muted);text-align:center;line-height:1.6;margin:10px auto 16px;max-width:380px;}
 
+.jump-row{display:flex;justify-content:center;margin:12px 0 4px;}
+.jump-select{
+  appearance:none;-webkit-appearance:none;
+  background:var(--surface);color:var(--ink);border:none;border-radius:999px;
+  padding:9px 34px 9px 16px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;
+  box-shadow:0 1px 3px rgba(20,22,27,.12),0 1px 1px rgba(20,22,27,.06);
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2371737F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+  background-repeat:no-repeat;background-position:left 10px center;background-size:13px;
+}
+html[dir="rtl"] .jump-select{padding:9px 16px 9px 34px;background-position:left 10px center;}
+.jump-select:focus{outline:none;box-shadow:0 0 0 4px var(--brand-tint);}
+.section{scroll-margin-top:14px;}
+.sections-grid.single{grid-template-columns:1fr;max-width:320px;margin:0 auto;}
+
+
 /* Two-column split */
 .sections-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;}
 
@@ -201,6 +216,9 @@ const THEME_KEY = 'theme-pref';
 let state = null;
 let loaded = false;
 let theme = 'light';
+let isEditingName = false;
+let currentPerson = 'A';
+const VIEW_KEY = 'view-pref';
 
 const DEFAULT_MSG = `مرحبًا،
 نعمل على مشروع لتطوير أداة ذكاء اصطناعي طبية مجانية باللغة العربية، تساعد الناس على فهم بعض المؤشرات الصحية الأولية والتنبه للحالات التي قد تحتاج إلى مراجعة مختص. ونهدف أيضًا إلى تحسين فهم الأداة للهجات العربية وطريقة الكلام اليومية.
@@ -265,6 +283,19 @@ async function loadTheme(){
     theme = (res && (res.value === 'dark' || res.value === 'light')) ? res.value : 'light';
   }catch(e){ theme = 'light'; }
   applyTheme();
+}
+
+async function loadViewPref(){
+  try{
+    const res = await window.storage.get(VIEW_KEY, false);
+    currentPerson = (res && (res.value === 'A' || res.value === 'B')) ? res.value : 'A';
+  }catch(e){ currentPerson = 'A'; }
+}
+
+async function setPerson(p){
+  currentPerson = p;
+  render();
+  try{ await window.storage.set(VIEW_KEY, p, false); }catch(e){}
 }
 
 async function toggleTheme(){
@@ -416,7 +447,7 @@ function renderTracker(app){
       </div>
     `;}).join('');
     return `
-      <div class="section">
+      <div class="section" id="sec-${p}">
         <div class="section-head">
           ${ring(pct, 36, 4)}
           <div class="name disp">${state.people[p]}</div>
@@ -442,9 +473,14 @@ function renderTracker(app){
       </div>
     </div>
     <div class="hint-text">${T.hint}</div>
-    <div class="sections-grid">
-      ${sectionHtml('A')}
-      ${sectionHtml('B')}
+    <div class="jump-row">
+      <select class="jump-select" id="jumpSelect">
+        <option value="A" ${currentPerson==='A'?'selected':''}>${state.people.A}</option>
+        <option value="B" ${currentPerson==='B'?'selected':''}>${state.people.B}</option>
+      </select>
+    </div>
+    <div class="sections-grid single">
+      ${sectionHtml(currentPerson)}
     </div>
     <div class="reset-row"><button id="resetBtn">${T.resetBtn}</button></div>
   `;
@@ -483,12 +519,13 @@ function renderTracker(app){
   });
 
   app.querySelectorAll('[data-name]').forEach(inp=>{
+    inp.addEventListener('focus', ()=>{ isEditingName = true; });
     inp.addEventListener('input', ()=>{
       const id = inp.getAttribute('data-name');
       const item = state.items.find(i=>i.id===id);
       item.name = inp.value;
     });
-    inp.addEventListener('blur', async ()=>{ await saveState(); });
+    inp.addEventListener('blur', async ()=>{ isEditingName = false; await saveState(); });
   });
 
   document.getElementById('resetBtn').addEventListener('click', async ()=>{
@@ -498,12 +535,29 @@ function renderTracker(app){
       render();
     }
   });
+  const jumpSel = document.getElementById('jumpSelect');
+  if(jumpSel){
+    jumpSel.addEventListener('change', ()=>{ setPerson(jumpSel.value); });
+  }
   const tb2 = document.getElementById('themeBtn');
   if(tb2) tb2.addEventListener('click', toggleTheme);
 }
 
+async function pollForUpdates(){
+  if(!loaded || isEditingName) return;
+  try{
+    const res = await window.storage.get(KEY, true);
+    const fresh = res ? res.value : null;
+    if(fresh && fresh !== JSON.stringify(state)){
+      state = JSON.parse(fresh);
+      render();
+    }
+  }catch(e){ /* ignore transient errors */ }
+}
+
 async function init(){
   await loadTheme();
+  await loadViewPref();
   try{
     const res = await window.storage.get(KEY, true);
     state = res ? JSON.parse(res.value) : null;
@@ -514,6 +568,7 @@ async function init(){
   }
   loaded = true;
   render();
+  setInterval(pollForUpdates, 5000);
 }
 init();
 </script>
