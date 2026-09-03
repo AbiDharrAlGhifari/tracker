@@ -210,8 +210,43 @@ html[dir="rtl"] .jump-select{padding:9px 16px 9px 34px;background-position:left 
 <body>
 <div class="wrap" id="app"></div>
 
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+<script>
+/* Firebase Realtime Database configuration.
+   Paste the config from Firebase Console > Project settings > Your apps > Web app. */
+const FIREBASE_CONFIG = {
+  apiKey: "PASTE_API_KEY_HERE",
+  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://PASTE_DATABASE_NAME.REGION.firebasedatabase.app",
+  projectId: "PASTE_PROJECT_ID",
+  storageBucket: "PASTE_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "PASTE_MESSAGING_SENDER_ID",
+  appId: "PASTE_APP_ID"
+};
+
+let firebaseDB = null;
+let firebaseRef = null;
+let firebaseConnected = false;
+try {
+  const configured = FIREBASE_CONFIG.apiKey !== "PASTE_API_KEY_HERE" &&
+                     FIREBASE_CONFIG.projectId !== "PASTE_PROJECT_ID" &&
+                     FIREBASE_CONFIG.appId !== "PASTE_APP_ID" &&
+                     FIREBASE_CONFIG.databaseURL.indexOf("PASTE_") === -1;
+  if (configured && window.firebase) {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    firebaseDB = firebase.database();
+    firebaseRef = firebaseDB.ref('survey-tracker-v5');
+    firebaseConnected = true;
+  }
+} catch (e) {
+  console.error('Firebase initialization failed:', e);
+}
+</script>
+
 <script>
 const KEY = 'survey-tracker-v5';
+const LOCAL_KEY = 'survey-tracker-v5-local';
 const THEME_KEY = 'theme-pref';
 let state = null;
 let loaded = false;
@@ -308,11 +343,43 @@ async function toggleTheme(){
 
 async function saveState(){
   if(!state) return;
-  try{
-    await window.storage.set(KEY, JSON.stringify(state), true);
-  }catch(e){
-    console.error('save failed', e);
+  const envelope = { updatedAt: Date.now(), state };
+
+  // Durable browser backup.
+  try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(envelope)); }catch(e){ console.error('local save failed', e); }
+
+  // Primary shared database: Firebase Realtime Database.
+  if(firebaseConnected && firebaseRef){
+    try{
+      await firebaseRef.set({ updatedAt: firebase.database.ServerValue.TIMESTAMP, state });
+      return;
+    }catch(e){ console.error('Firebase save failed', e); }
   }
+
+  // Legacy shared storage fallback while Firebase is not configured/available.
+  try{
+    if(window.storage && typeof window.storage.set === 'function'){
+      await window.storage.set(KEY, JSON.stringify(envelope), true);
+    }
+  }catch(e){ console.error('shared save failed', e); }
+}
+
+function unpackState(raw){
+  try{
+    const parsed = JSON.parse(raw);
+    // New format: {updatedAt, state}
+    if(parsed && parsed.state && typeof parsed.updatedAt === 'number') return parsed;
+    // Old format: plain state object. Keep it valid, but give it an old timestamp.
+    if(parsed && parsed.items) return {updatedAt: 0, state: parsed};
+  }catch(e){}
+  return null;
+}
+
+function loadLocalState(){
+  try{
+    const raw = localStorage.getItem(LOCAL_KEY);
+    return raw ? unpackState(raw) : null;
+  }catch(e){ return null; }
 }
 
 function parseLinks(raw){
@@ -556,39 +623,120 @@ function renderTracker(app){
 }
 
 async function pollForUpdates(){
-  if(!loaded || isEditingName) return;
+  if(!loaded || isEditingName || firebaseConnected) return;
   try{
+    if(!window.storage || typeof window.storage.get !== 'function') return;
     const res = await window.storage.get(KEY, true);
-    const fresh = res ? res.value : null;
-    if(fresh && fresh !== JSON.stringify(state)){
-      state = JSON.parse(fresh);
+    if(!res || !res.value) return;
+    const incoming = unpackState(res.value);
+    if(!incoming || !incoming.state) return;
+    const localRaw = localStorage.getItem(LOCAL_KEY);
+    const local = localRaw ? unpackState(localRaw) : null;
+    const localTime = local ? local.updatedAt : 0;
+    if(incoming.updatedAt > localTime){
+      state = incoming.state;
+      try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(incoming)); }catch(e){}
       render();
     }
-  }catch(e){ /* ignore transient errors */ }
+  }catch(e){}
 }
+
+function startFirebaseSync(){
+  if(!firebaseConnected || !firebaseRef) return;
+  firebaseRef.on('value', (snap)=>{
+    if(!snap.exists()) return;
+    const data = snap.val();
+    if(!data || !data.state) return;
+    const incoming = { updatedAt: Number(data.updatedAt || 0), state: data.state };
+    const localRaw = localStorage.getItem(LOCAL_KEY);
+    const local = localRaw ? unpackState(localRaw) : null;
+    const localTime = local ? local.updatedAt : 0;
+
+    // Firebase is the shared source of truth. Accept newer remote data,
+    // but do not overwrite a newer local edit.
+    if(incoming.updatedAt >= localTime){
+      state = incoming.state;
+      try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(incoming)); }catch(e){}
+      render();
+    }
+  }, (err)=>console.error('Firebase realtime listener failed:', err));
+}
+
+window.addEventListener('storage',(e)=>{
+  if(e.key !== LOCAL_KEY || !e.newValue || isEditingName) return;
+  const incoming = unpackState(e.newValue);
+  if(!incoming || !incoming.state) return;
+  const current = state ? JSON.stringify(state) : '';
+  if(JSON.stringify(incoming.state) !== current){
+    state = incoming.state;
+    render();
+  }
+});
 
 async function init(){
   await loadTheme();
   await loadViewPref();
-  try{
-    const res = await window.storage.get(KEY, true);
-    state = res ? JSON.parse(res.value) : null;
-  }catch(e){ state = null; }
+
+  // First restore the durable local copy immediately.
+  const local = loadLocalState();
+  state = local ? local.state : null;
+
+  // Firebase is the primary shared source of truth.
+  if(firebaseConnected && firebaseRef){
+    try{
+      const snap = await firebaseRef.once('value');
+      const data = snap.exists() ? snap.val() : null;
+      const shared = data && data.state ? { updatedAt: Number(data.updatedAt || 0), state: data.state } : null;
+      const localTime = local ? local.updatedAt : 0;
+      const sharedTime = shared ? shared.updatedAt : 0;
+
+      if(shared && shared.state && sharedTime >= localTime){
+        state = shared.state;
+        try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(shared)); }catch(e){}
+      }else if(local && local.state && localTime > sharedTime){
+        await saveState();
+      }
+    }catch(e){ console.error('Firebase initial load failed:', e); }
+  } else {
+    // Legacy shared storage fallback.
+    try{
+      if(window.storage && typeof window.storage.get === 'function'){
+        const res = await window.storage.get(KEY, true);
+        const shared = res && res.value ? unpackState(res.value) : null;
+        const localTime = local ? local.updatedAt : 0;
+        const sharedTime = shared ? shared.updatedAt : 0;
+        if(shared && shared.state && sharedTime > localTime){
+          state = shared.state;
+          try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(shared)); }catch(e){}
+        }else if(local && local.state && localTime > sharedTime){
+          await saveState();
+        }
+      }
+    }catch(e){}
+  }
+
   if(!state){
     state = buildState(DEFAULT_LINKS, DEFAULT_NAME_A, DEFAULT_NAME_B, DEFAULT_MSG);
     await saveState();
   }
+
   loaded = true;
   render();
-  // Keep both users synchronized in near real-time.
+  startFirebaseSync();
   setInterval(pollForUpdates, 1000);
+
+  // localStorage is synchronous and is the final safety net on page close.
   window.addEventListener('beforeunload', ()=>{
-    if(state) {
-      try { window.storage.set(KEY, JSON.stringify(state), true); } catch(e) {}
+    if(state){
+      try{
+        const existing = loadLocalState();
+        const envelope = { updatedAt: existing ? Math.max(existing.updatedAt, Date.now()) : Date.now(), state };
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(envelope));
+      }catch(e){}
     }
   });
 }
+
 init();
+
 </script>
-</body>
-</html>
