@@ -24,53 +24,80 @@
   --success:#0FA084;
   --success-tint:#E1F4EF;
   --track:#E5E6ED;
+  --glow1:rgba(84,87,229,0.10);
+  --glow2:rgba(15,160,132,0.06);
   --radius-lg:22px;
   --radius-md:16px;
   --radius-sm:12px;
+}
+html[data-theme="dark"]{
+  --bg:#15161C;
+  --surface:#1E2028;
+  --field:#262832;
+  --ink:#F2F3F7;
+  --ink-muted:#8E909C;
+  --brand:#7477F5;
+  --brand-tint:rgba(116,119,245,0.16);
+  --success:#1DC3A3;
+  --success-tint:rgba(29,195,163,0.14);
+  --track:#33353F;
+  --glow1:rgba(116,119,245,0.14);
+  --glow2:rgba(29,195,163,0.08);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;min-height:100%;}
 body{
   background:
-    radial-gradient(1000px 480px at 50% -8%, rgba(84,87,229,0.10), transparent 60%),
-    radial-gradient(700px 380px at 90% 6%, rgba(15,160,132,0.06), transparent 55%),
+    radial-gradient(1000px 480px at 50% -8%, var(--glow1), transparent 60%),
+    radial-gradient(700px 380px at 90% 6%, var(--glow2), transparent 55%),
     var(--bg);
   color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
   -webkit-text-size-adjust:100%;
   min-height:100vh;
+  transition:background .4s ease, color .4s ease;
 }
 .disp{font-family:'Alnaseeb','Segoe UI',sans-serif;font-weight:400;}
-body.lang-en .disp{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;font-weight:700;}
 
 @media (prefers-reduced-motion: reduce){
   *{animation:none!important;transition:none!important;}
 }
 
-.wrap{max-width:540px;margin:0 auto;padding:22px 16px 64px;}
+.wrap{max-width:540px;margin:0 auto;padding:22px 14px 64px;}
 
-/* Segmented language control */
-.seg-row{display:flex;justify-content:center;margin-bottom:18px;}
-.segmented{display:inline-flex;background:rgba(20,22,27,0.06);border-radius:999px;padding:3px;gap:2px;}
-.seg-btn{border:none;background:none;padding:7px 18px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--ink-muted);cursor:pointer;transition:background .25s,color .25s,box-shadow .25s;}
-.seg-btn.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(20,22,27,.14),0 1px 1px rgba(20,22,27,.06);}
+/* Theme toggle */
+.top-row{display:flex;justify-content:center;margin-bottom:18px;}
+.theme-btn{
+  display:flex;align-items:center;gap:8px;border:none;background:var(--surface);
+  border-radius:999px;padding:7px 16px 7px 7px;cursor:pointer;font-family:inherit;
+  box-shadow:0 1px 3px rgba(20,22,27,.12),0 1px 1px rgba(20,22,27,.06);
+  color:var(--ink-muted);font-size:12px;font-weight:600;
+  transition:background .3s,box-shadow .3s;
+}
+html[dir="rtl"] .theme-btn{padding:7px 7px 7px 16px;}
+.theme-btn .icon-dot{
+  width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;
+  display:flex;align-items:center;justify-content:center;flex:none;transition:background .3s,transform .4s;
+}
+.theme-btn .icon-dot svg{width:13px;height:13px;}
+.theme-btn.is-dark .icon-dot{background:var(--success);}
 
 /* Hero */
 .hero{animation:heroIn .6s cubic-bezier(.16,1,.3,1);margin-bottom:6px;}
 @keyframes heroIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .hero-main{display:flex;align-items:center;justify-content:space-between;gap:14px;}
 .hero-text{min-width:0;}
-.hero-title{font-size:25px;line-height:1.35;margin:0;}
-.hero-sub{font-size:12.5px;color:var(--ink-muted);margin-top:5px;}
+.hero-title{font-size:24px;line-height:1.35;margin:0;}
+.hero-sub{font-size:12px;color:var(--ink-muted);margin-top:5px;}
 .ring-wrap{position:relative;flex:none;}
-.ring-wrap .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--brand);}
+.ring-wrap .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--brand);}
 
 /* Setup screen */
-.setup{padding-top:8px;}
+.setup{padding-top:6px;}
 .setup .hero-title{text-align:center;}
 .setup .hero-sub{text-align:center;max-width:400px;margin-left:auto;margin-right:auto;}
-.field-group{margin-top:18px;}
-.field-label{display:block;font-size:12px;color:var(--ink-muted);font-weight:600;margin:0 0 8px;}
+.field-group{margin-top:16px;}
+.field-label{display:block;font-size:11.5px;color:var(--ink-muted);font-weight:600;margin:0 0 7px;}
 .field{
   width:100%;background:var(--field);border:1.5px solid transparent;border-radius:var(--radius-md);
   padding:13px 15px;font-size:13.5px;color:var(--ink);transition:border-color .2s,background .2s,box-shadow .2s;
@@ -78,81 +105,81 @@ body.lang-en .disp{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display"
 }
 .field:focus{outline:none;background:var(--surface);border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-tint);}
 textarea.field{resize:vertical;}
-#linksInput{min-height:120px;direction:ltr;text-align:left;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;}
-#msgInput{min-height:180px;direction:rtl;text-align:right;line-height:1.7;}
+#linksInput{min-height:115px;direction:ltr;text-align:left;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;}
+#msgInput{min-height:170px;direction:rtl;text-align:right;line-height:1.7;}
 .names-row{display:flex;gap:10px;}
 .names-row .field{flex:1;min-width:0;}
 .btn-primary{
-  margin-top:20px;width:100%;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-md);
+  margin-top:18px;width:100%;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-md);
   padding:15px 20px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;
   box-shadow:0 14px 28px -14px rgba(84,87,229,.65);
   transition:transform .15s ease, box-shadow .15s ease;
 }
 .btn-primary:active{transform:scale(.97);box-shadow:0 6px 14px -8px rgba(84,87,229,.55);}
-.err-text{color:#D6473F;font-size:12px;margin-top:8px;min-height:16px;font-weight:600;}
+.err-text{color:#E5675E;font-size:12px;margin-top:8px;min-height:16px;font-weight:600;}
 
-/* Body content after setup */
-.summary-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px 0 8px;}
-.summary-chip{background:var(--surface);border-radius:999px;padding:7px 16px;font-size:12px;font-weight:700;color:var(--ink-muted);box-shadow:0 1px 2px rgba(20,22,27,.05),0 6px 16px -12px rgba(20,22,27,.25);}
-.summary-chip b{color:var(--success);}
+.hint-text{font-size:11px;color:var(--ink-muted);text-align:center;line-height:1.65;margin:2px auto 18px;max-width:380px;}
 
-.hint-text{font-size:11.5px;color:var(--ink-muted);text-align:center;line-height:1.7;margin:4px auto 22px;max-width:400px;}
+/* Two-column split for both people */
+.sections-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;}
 
-.section{margin-top:8px;}
-.section-head{display:flex;align-items:center;gap:12px;margin:0 0 12px;}
-.section-head .ring-wrap{width:44px;height:44px;}
-.section-head .name{font-size:16.5px;}
-.section-head .name-sub{font-size:11px;color:var(--ink-muted);margin-top:1px;}
-.remaining-chip{background:var(--brand-tint);color:var(--brand);font-size:11px;font-weight:800;padding:6px 13px;border-radius:999px;flex:none;white-space:nowrap;}
+.section-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;margin-bottom:10px;}
+.section-head .ring-wrap{width:38px;height:38px;}
+.section-head .ring-num{font-size:9.5px;}
+.section-head .name{font-size:13.5px;line-height:1.3;}
+.section-head .name-sub{font-size:9.5px;color:var(--ink-muted);}
+.remaining-chip{background:var(--brand-tint);color:var(--brand);font-size:9.5px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap;}
 
 .msg-card{
-  background:var(--surface);border-radius:18px;padding:13px 14px;margin-bottom:9px;
-  box-shadow:0 1px 2px rgba(20,22,27,.04),0 10px 24px -18px rgba(20,22,27,.35);
+  background:var(--surface);border-radius:15px;padding:10px;margin-bottom:8px;
+  box-shadow:0 1px 2px rgba(20,22,27,.04),0 10px 22px -18px rgba(20,22,27,.35);
   transition:background .35s ease, box-shadow .35s ease;
 }
 .msg-card.is-sent{background:var(--success-tint);box-shadow:0 1px 2px rgba(20,22,27,.02),0 6px 14px -12px rgba(15,160,132,.4);}
-.card-top{display:flex;align-items:center;gap:10px;}
+.card-top{display:flex;align-items:center;gap:6px;}
 .idx-badge{
-  width:25px;height:25px;border-radius:8px;background:var(--brand-tint);color:var(--brand);
-  display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;flex:none;
+  width:20px;height:20px;border-radius:7px;background:var(--brand-tint);color:var(--brand);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex:none;
   transition:background .3s,color .3s;
 }
 .msg-card.is-sent .idx-badge{background:var(--success);color:#fff;}
-.link-text{flex:1;min-width:0;font-size:11px;color:var(--ink-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:left;text-decoration:none;}
-.ts-text{font-size:9.5px;color:var(--success);font-weight:700;flex:none;}
+.link-text{flex:1;min-width:0;font-size:9.5px;color:var(--ink-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:left;text-decoration:none;}
+.ts-text{display:block;font-size:8.5px;color:var(--success);font-weight:700;margin-top:4px;}
 
-.action-row{display:flex;gap:8px;margin-top:10px;}
+.action-row{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
 .pill-btn{
-  flex:1;display:flex;align-items:center;justify-content:center;gap:5px;
-  padding:9px 8px;border-radius:11px;font-size:11.5px;font-weight:700;border:none;cursor:pointer;
+  width:100%;display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:8px 6px;border-radius:10px;font-size:10.5px;font-weight:700;border:none;cursor:pointer;
   font-family:inherit;transition:background .2s,color .2s,box-shadow .2s,transform .1s;
 }
-.pill-btn svg{width:13px;height:13px;flex:none;}
+.pill-btn svg{width:12px;height:12px;flex:none;}
 .pill-btn:active{transform:scale(.96);}
 .pill-btn.copy{background:var(--field);color:var(--ink-muted);}
 .pill-btn.copy.copied{background:var(--brand);color:#fff;}
 .pill-btn.sent{background:var(--field);color:var(--ink-muted);}
-.pill-btn.sent.on{background:var(--success);color:#fff;box-shadow:0 8px 18px -10px rgba(15,160,132,.65);}
+.pill-btn.sent.on{background:var(--success);color:#fff;box-shadow:0 8px 16px -10px rgba(15,160,132,.65);}
 
-.reset-row{text-align:center;margin-top:22px;}
+.reset-row{text-align:center;margin-top:20px;}
 .reset-row button{background:none;border:none;color:var(--ink-muted);font-size:12px;cursor:pointer;padding:8px;font-family:inherit;text-decoration:underline;text-underline-offset:3px;}
 
-@media (max-width:380px){
-  .wrap{padding:16px 11px 50px;}
-  .hero-title{font-size:22px;}
-  .msg-card{padding:11px 12px;}
-  .pill-btn{font-size:10.5px;padding:8px 6px;}
+@media (max-width:360px){
+  .wrap{padding:14px 9px 46px;}
+  .hero-title{font-size:20px;}
+  .sections-grid{gap:7px;}
+  .msg-card{padding:8px;border-radius:13px;}
+  .pill-btn{font-size:9.5px;padding:7px 4px;}
 }
 </style>
 </head>
-<body class="lang-ar">
+<body>
 <div class="wrap" id="app"></div>
 
 <script>
-const KEY = 'survey-tracker-v3';
+const KEY = 'survey-tracker-v4';
+const THEME_KEY = 'theme-pref';
 let state = null;
 let loaded = false;
-let lang = 'ar';
+let theme = 'light';
 
 const DEFAULT_MSG = `مرحبًا،
 نعمل على مشروع لتطوير أداة ذكاء اصطناعي طبية مجانية باللغة العربية، تساعد الناس على فهم بعض المؤشرات الصحية الأولية والتنبه للحالات التي قد تحتاج إلى مراجعة مختص. ونهدف أيضًا إلى تحسين فهم الأداة للهجات العربية وطريقة الكلام اليومية.
@@ -164,59 +191,39 @@ const PLACEHOLDER = '(Insert link here)';
 
 const ICON_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M4 15.5V5.5A2 2 0 0 1 6 3.5h10"/></svg>';
 const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+const ICON_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>';
+const ICON_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.3A8.5 8.5 0 1 1 9.7 4a6.8 6.8 0 0 0 10.3 10.3Z"/></svg>';
 
 const T = {
-  ar: {
-    dir: 'rtl',
-    setupTitle: 'رتّب إرسال روابطك',
-    setupDesc: 'الصق كل الروابط، رابط في كل سطر — بتنقسم تلقائياً بينكم للنص، وجهّز رسالتك مرة وحدة وبتتكرر جاهزة مع كل رابط.',
-    linksLabel: 'الروابط',
-    linksPlaceholder: 'https://...\nhttps://...\n...',
-    msgLabel: 'نص الرسالة — خلّي مكان الرابط مكتوب بالضبط (Insert link here) وبيتبدّل تلقائياً',
-    nameA: 'اسم الشخص الأول',
-    nameB: 'اسم الشخص الثاني',
-    create: 'إنشاء المتابعة',
-    errEmpty: 'الصق رابط واحد على الأقل أولاً.',
-    title: 'متابعة إرسال الروابط',
-    sentOf: (d,t)=> `${d} من ${t} تم إرسالها`,
-    hint: 'انسخ الرسالة الجاهزة، أرسلها، وفعّل "تم الإرسال" — يتحدث العداد والتظليل تلقائياً.',
-    copy: 'نسخ الرسالة',
-    copied: 'تم النسخ',
-    sentLbl: 'تم الإرسال',
-    remaining: (n)=> `متبقي ${n}`,
-    resetBtn: 'ابدأ من جديد بقائمة جديدة',
-    resetConfirm: 'هذا بيمسح القائمة الحالية للجميع. تكمل؟',
-  },
-  en: {
-    dir: 'ltr',
-    setupTitle: 'Organize your sending list',
-    setupDesc: "Paste every link, one per line — they'll split evenly, and your message is written once and reused with each link.",
-    linksLabel: 'Links',
-    linksPlaceholder: 'https://...\nhttps://...\n...',
-    msgLabel: 'Message text — keep the exact placeholder (Insert link here), it swaps automatically',
-    nameA: 'Person A name',
-    nameB: 'Person B name',
-    create: 'Create tracker',
-    errEmpty: 'Paste at least one link first.',
-    title: 'Link sending tracker',
-    sentOf: (d,t)=> `${d} of ${t} sent`,
-    hint: 'Copy the ready message, send it, then mark "Sent" — the count and shading update automatically.',
-    copy: 'Copy message',
-    copied: 'Copied',
-    sentLbl: 'Sent',
-    remaining: (n)=> `${n} left`,
-    resetBtn: 'Start over with a new list',
-    resetConfirm: 'This clears the current list for everyone. Continue?',
-  }
+  setupTitle: 'رتّب إرسال روابطك',
+  setupDesc: 'الصق كل الروابط، رابط في كل سطر — بتنقسم تلقائياً بينكم، وجهّز رسالتك مرة وحدة وبتتكرر جاهزة مع كل رابط.',
+  linksLabel: 'الروابط',
+  linksPlaceholder: 'https://...\nhttps://...\n...',
+  msgLabel: 'نص الرسالة — خلّي مكان الرابط مكتوب بالضبط (Insert link here) وبيتبدّل تلقائياً',
+  nameA: 'اسم الشخص الأول',
+  nameB: 'اسم الشخص الثاني',
+  create: 'إنشاء المتابعة',
+  errEmpty: 'الصق رابط واحد على الأقل أولاً.',
+  title: 'متابعة إرسال الروابط',
+  sentOf: (d,t)=> `${d} من ${t} تم إرسالها`,
+  hint: 'انسخ الرسالة الجاهزة، أرسلها، وفعّل "تم الإرسال" — يتحدث العداد والتظليل تلقائياً.',
+  copy: 'نسخ الرسالة',
+  copied: 'تم النسخ',
+  sentLbl: 'تم الإرسال',
+  remaining: (n)=> `متبقي ${n}`,
+  resetBtn: 'ابدأ من جديد بقائمة جديدة',
+  resetConfirm: 'هذا بيمسح القائمة الحالية للجميع. تكمل؟',
+  themeLight: 'فاتح',
+  themeDark: 'داكن',
 };
 
 function uid(){ return Math.random().toString(36).slice(2,9); }
 
-function ring(pct, size, stroke, wrapClass){
+function ring(pct, size, stroke){
   const r = (size - stroke)/2;
   const c = 2*Math.PI*r;
   const offset = c - (Math.max(0,Math.min(100,pct))/100)*c;
-  return `<div class="ring-wrap ${wrapClass||''}" style="width:${size}px;height:${size}px">
+  return `<div class="ring-wrap" style="width:${size}px;height:${size}px">
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform:rotate(-90deg)">
       <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${stroke}"/>
       <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--brand)" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${offset}" style="transition:stroke-dashoffset .5s cubic-bezier(.4,0,.2,1)"/>
@@ -225,12 +232,25 @@ function ring(pct, size, stroke, wrapClass){
   </div>`;
 }
 
-function setLang(l){
-  lang = l;
-  document.documentElement.lang = l;
-  document.documentElement.dir = T[l].dir;
-  document.body.className = l === 'ar' ? 'lang-ar' : 'lang-en';
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+async function loadTheme(){
+  try{
+    const res = await window.storage.get(THEME_KEY, false);
+    theme = (res && (res.value === 'dark' || res.value === 'light')) ? res.value : 'light';
+  }catch(e){
+    theme = 'light';
+  }
+  applyTheme();
+}
+
+async function toggleTheme(){
+  theme = theme === 'dark' ? 'light' : 'dark';
+  applyTheme();
   render();
+  try{ await window.storage.set(THEME_KEY, theme, false); }catch(e){}
 }
 
 async function loadState(){
@@ -266,7 +286,7 @@ function buildState(links, nameA, nameB, msgTemplate){
     sentAt: null
   }));
   return {
-    people: { A: nameA || (lang==='ar' ? 'الشخص الأول' : 'Person A'), B: nameB || (lang==='ar' ? 'الشخص الثاني' : 'Person B') },
+    people: { A: nameA || 'الشخص الأول', B: nameB || 'الشخص الثاني' },
     msgTemplate: msgTemplate || DEFAULT_MSG,
     items
   };
@@ -276,7 +296,7 @@ function shortUrl(url){
   try{
     const u = new URL(url);
     const idParam = u.searchParams.get('uid') || u.searchParams.get('USER_ID') || u.searchParams.get('pst') || '';
-    return u.hostname + u.pathname + (idParam ? ('  ·  ' + idParam.slice(0,10)) : '');
+    return u.hostname.replace('www.','') + (idParam ? ('  ·  ' + idParam.slice(0,8)) : u.pathname.slice(0,14));
   }catch(e){
     return url;
   }
@@ -285,7 +305,7 @@ function shortUrl(url){
 function fmtTime(ts){
   if(!ts) return '';
   const d = new Date(ts);
-  return d.toLocaleString(lang === 'ar' ? 'ar' : 'en', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+  return d.toLocaleString('ar', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
 }
 
 function messageFor(url){
@@ -319,11 +339,14 @@ function fallbackCopy(text, done){
   done();
 }
 
-function segControl(){
-  return `<div class="seg-row"><div class="segmented">
-    <button class="seg-btn ${lang==='ar'?'active':''}" data-lang="ar">عربي</button>
-    <button class="seg-btn ${lang==='en'?'active':''}" data-lang="en">English</button>
-  </div></div>`;
+function themeToggleHtml(){
+  const isDark = theme === 'dark';
+  return `<div class="top-row">
+    <button class="theme-btn ${isDark?'is-dark':''}" id="themeBtn">
+      <span>${isDark ? T.themeDark : T.themeLight}</span>
+      <span class="icon-dot">${isDark ? ICON_MOON : ICON_SUN}</span>
+    </button>
+  </div>`;
 }
 
 function render(){
@@ -334,35 +357,33 @@ function render(){
   }else{
     renderTracker(app);
   }
-  app.querySelectorAll('[data-lang]').forEach(b=>{
-    b.addEventListener('click', ()=> setLang(b.getAttribute('data-lang')));
-  });
+  const tb = document.getElementById('themeBtn');
+  if(tb) tb.addEventListener('click', toggleTheme);
 }
 
 function renderSetup(app){
-  const t = T[lang];
   app.innerHTML = `
-    ${segControl()}
+    ${themeToggleHtml()}
     <div class="setup hero">
-      <h1 class="hero-title disp">${t.setupTitle}</h1>
-      <p class="hero-sub">${t.setupDesc}</p>
+      <h1 class="hero-title disp">${T.setupTitle}</h1>
+      <p class="hero-sub">${T.setupDesc}</p>
 
       <div class="field-group">
-        <label class="field-label">${t.linksLabel}</label>
-        <textarea class="field" id="linksInput" placeholder="${t.linksPlaceholder}"></textarea>
+        <label class="field-label">${T.linksLabel}</label>
+        <textarea class="field" id="linksInput" placeholder="${T.linksPlaceholder}"></textarea>
       </div>
 
       <div class="field-group names-row">
-        <input class="field" id="nameA" placeholder="${t.nameA}" />
-        <input class="field" id="nameB" placeholder="${t.nameB}" />
+        <input class="field" id="nameA" placeholder="${T.nameA}" />
+        <input class="field" id="nameB" placeholder="${T.nameB}" />
       </div>
 
       <div class="field-group">
-        <label class="field-label">${t.msgLabel}</label>
+        <label class="field-label">${T.msgLabel}</label>
         <textarea class="field" id="msgInput">${DEFAULT_MSG}</textarea>
       </div>
 
-      <button class="btn-primary" id="startBtn">${t.create}</button>
+      <button class="btn-primary" id="startBtn">${T.create}</button>
       <div class="err-text" id="setupErr"></div>
     </div>
   `;
@@ -371,7 +392,7 @@ function renderSetup(app){
     const links = parseLinks(raw);
     const errEl = document.getElementById('setupErr');
     if(links.length === 0){
-      errEl.textContent = t.errEmpty;
+      errEl.textContent = T.errEmpty;
       return;
     }
     const nameA = document.getElementById('nameA').value.trim();
@@ -390,12 +411,11 @@ function countFor(person){
 }
 
 function renderTracker(app){
-  const t = T[lang];
   const totalSent = state.items.filter(i=>i.sent).length;
   const total = state.items.length;
   const overallPct = total ? (totalSent/total*100) : 0;
 
-  const blocks = ['A','B'].map(p=>{
+  const sectionHtml = (p)=>{
     const items = state.items.filter(i=>i.person===p);
     const {done, total: pTotal} = countFor(p);
     const pct = pTotal ? (done/pTotal*100) : 0;
@@ -405,43 +425,44 @@ function renderTracker(app){
         <div class="card-top">
           <div class="idx-badge">${idx+1}</div>
           <a class="link-text" href="${it.url}" target="_blank" rel="noopener">${shortUrl(it.url)}</a>
-          ${it.sent && it.sentAt ? `<span class="ts-text">${fmtTime(it.sentAt)}</span>` : ''}
         </div>
+        ${it.sent && it.sentAt ? `<span class="ts-text">${fmtTime(it.sentAt)}</span>` : ''}
         <div class="action-row">
-          <button class="pill-btn copy" data-copy="${it.id}">${ICON_COPY}<span>${t.copy}</span></button>
-          <button class="pill-btn sent ${it.sent ? 'on' : ''}" data-toggle="${it.id}">${ICON_CHECK}<span>${t.sentLbl}</span></button>
+          <button class="pill-btn copy" data-copy="${it.id}">${ICON_COPY}<span>${T.copy}</span></button>
+          <button class="pill-btn sent ${it.sent ? 'on' : ''}" data-toggle="${it.id}">${ICON_CHECK}<span>${T.sentLbl}</span></button>
         </div>
       </div>
     `).join('');
     return `
       <div class="section">
         <div class="section-head">
-          ${ring(pct, 44, 5)}
-          <div style="flex:1;min-width:0;">
-            <div class="name disp">${state.people[p]}</div>
-            <div class="name-sub">${done}/${pTotal}</div>
-          </div>
-          <div class="remaining-chip">${t.remaining(remaining)}</div>
+          ${ring(pct, 38, 4)}
+          <div class="name disp">${state.people[p]}</div>
+          <div class="name-sub">${done}/${pTotal}</div>
+          <div class="remaining-chip">${T.remaining(remaining)}</div>
         </div>
         ${cards}
       </div>
     `;
-  }).join('');
+  };
 
   app.innerHTML = `
-    ${segControl()}
+    ${themeToggleHtml()}
     <div class="hero">
       <div class="hero-main">
         <div class="hero-text">
-          <h1 class="hero-title disp">${t.title}</h1>
-          <div class="hero-sub">${t.sentOf(totalSent, total)}</div>
+          <h1 class="hero-title disp">${T.title}</h1>
+          <div class="hero-sub">${T.sentOf(totalSent, total)}</div>
         </div>
-        ${ring(overallPct, 58, 6)}
+        ${ring(overallPct, 54, 6)}
       </div>
     </div>
-    <div class="hint-text">${t.hint}</div>
-    ${blocks}
-    <div class="reset-row"><button id="resetBtn">${t.resetBtn}</button></div>
+    <div class="hint-text">${T.hint}</div>
+    <div class="sections-grid">
+      ${sectionHtml('A')}
+      ${sectionHtml('B')}
+    </div>
+    <div class="reset-row"><button id="resetBtn">${T.resetBtn}</button></div>
   `;
 
   app.querySelectorAll('[data-toggle]').forEach(btn=>{
@@ -461,21 +482,26 @@ function renderTracker(app){
       const id = btn.getAttribute('data-copy');
       const item = state.items.find(i=>i.id===id);
       const text = messageFor(item.url);
-      copyText(text, btn, t.copy, t.copied);
+      copyText(text, btn, T.copy, T.copied);
     });
   });
 
   document.getElementById('resetBtn').addEventListener('click', async ()=>{
-    const t2 = T[lang];
-    if(confirm(t2.resetConfirm)){
+    if(confirm(T.resetConfirm)){
       state = null;
       await saveState();
       render();
     }
   });
+  const tb2 = document.getElementById('themeBtn');
+  if(tb2) tb2.addEventListener('click', toggleTheme);
 }
 
-loadState();
+async function init(){
+  await loadTheme();
+  await loadState();
+}
+init();
 </script>
 </body>
 </html>
