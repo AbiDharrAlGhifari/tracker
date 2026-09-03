@@ -217,6 +217,7 @@ let state = null;
 let loaded = false;
 let theme = 'light';
 let isEditingName = false;
+let saveTimer = null;
 let currentPerson = 'A';
 const VIEW_KEY = 'view-pref';
 
@@ -306,8 +307,12 @@ async function toggleTheme(){
 }
 
 async function saveState(){
-  try{ await window.storage.set(KEY, JSON.stringify(state), true); }
-  catch(e){ console.error('save failed', e); }
+  if(!state) return;
+  try{
+    await window.storage.set(KEY, JSON.stringify(state), true);
+  }catch(e){
+    console.error('save failed', e);
+  }
 }
 
 function parseLinks(raw){
@@ -524,8 +529,15 @@ function renderTracker(app){
       const id = inp.getAttribute('data-name');
       const item = state.items.find(i=>i.id===id);
       item.name = inp.value;
+      // Save while typing so changes are not lost if the page is closed.
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(()=>saveState(), 250);
     });
-    inp.addEventListener('blur', async ()=>{ isEditingName = false; await saveState(); });
+    inp.addEventListener('blur', async ()=>{
+      isEditingName = false;
+      clearTimeout(saveTimer);
+      await saveState();
+    });
   });
 
   document.getElementById('resetBtn').addEventListener('click', async ()=>{
@@ -568,7 +580,13 @@ async function init(){
   }
   loaded = true;
   render();
-  setInterval(pollForUpdates, 5000);
+  // Keep both users synchronized in near real-time.
+  setInterval(pollForUpdates, 1000);
+  window.addEventListener('beforeunload', ()=>{
+    if(state) {
+      try { window.storage.set(KEY, JSON.stringify(state), true); } catch(e) {}
+    }
+  });
 }
 init();
 </script>
